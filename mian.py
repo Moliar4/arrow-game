@@ -5,12 +5,12 @@ import math
 pygame.init()
 
 # ==================== 配置 ====================
-COLS, ROWS = 10, 10
-CELL = 64
-MARGIN_TOP = 100
-MARGIN_SIDE = 40
+COLS, ROWS = 7, 7
+CELL = 78
+MARGIN_TOP = 130
+MARGIN_SIDE = 60
 WIDTH = COLS * CELL + MARGIN_SIDE * 2
-HEIGHT = ROWS * CELL + MARGIN_TOP + 60
+HEIGHT = ROWS * CELL + MARGIN_TOP + 90
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("一箭又一箭")
 
@@ -25,29 +25,34 @@ def load_font(size, bold=False):
         f.set_bold(bold)
         return f
 
+font_xs = load_font(14)
 font_sm = load_font(16)
 font_md = load_font(22)
-font_lg = load_font(34, bold=True)
-font_xl = load_font(56, bold=True)
+font_lg = load_font(30, bold=True)
+font_xl = load_font(48, bold=True)
 
 # ==================== 莫兰迪配色 ====================
 BG_TOP = (250, 246, 238)
 BG_BOTTOM = (238, 232, 220)
 BOARD_BG = (252, 250, 245)
 BOARD_BORDER = (214, 205, 190)
-GRID_LINE = (228, 220, 205)
+CELL_FILL = (255, 253, 250)
+CELL_LINE = (232, 225, 212)
 
 ARROW_COLORS = [
-    (176, 148, 148),
-    (148, 168, 176),
-    (176, 168, 148),
-    (148, 176, 156),
-    (168, 148, 176),
-    (176, 156, 148),
+    (196, 138, 138),
+    (138, 168, 196),
+    (196, 178, 128),
+    (138, 186, 158),
+    (178, 148, 196),
+    (206, 158, 128),
+    (148, 178, 178),
+    (196, 158, 168),
 ]
-ARROW_HIGHLIGHT = (216, 122, 122)
-ARROW_SHADOW = (200, 192, 182)
-ARROW_OUTLINE = (90, 82, 76)
+ARROW_HIGHLIGHT = (232, 100, 100)
+ARROW_HIT = (224, 60, 60)
+ARROW_SHADOW = (210, 202, 192)
+ARROW_OUTLINE = (85, 78, 72)
 
 TEXT_DARK = (78, 72, 68)
 TEXT_MID = (130, 122, 116)
@@ -56,35 +61,50 @@ TEXT_LIGHT = (170, 162, 156)
 BTN_NORMAL = (168, 184, 176)
 BTN_HOVER = (148, 168, 158)
 BTN_TEXT = (255, 255, 255)
-CLOSE_BG = (200, 160, 160)
-CLOSE_HOVER = (180, 130, 130)
+BTN_ALT = (200, 178, 158)
+BTN_ALT_HOVER = (180, 158, 138)
+CLOSE_BG = (208, 160, 160)
+CLOSE_HOVER = (188, 130, 130)
+
+PANEL_BG = (255, 252, 246)
+PANEL_BORDER = (218, 208, 192)
 
 OVERLAY = (60, 55, 52, 160)
+DIALOG_BG = (252, 250, 245)
+DIALOG_BORDER = (200, 190, 178)
 
 # ==================== 关卡数据 ====================
-# 设计原则：每个箭头都“朝外”或“指向空行/空列”，保证有解
-# 以下关卡均已人工验证存在通关顺序
 LEVELS = [
-    # 第 1 关：所有箭头都朝棋盘外方向，随便点都能过
+    # 第 1 关
     [
-        (0, 0, 'up'), (0, 5, 'up'), (0, 9, 'up'),
-        (5, 0, 'left'), (5, 9, 'right'),
-        (9, 0, 'down'), (9, 5, 'down'), (9, 9, 'down'),
+        (0, 1, 'up'), (0, 3, 'up'), (0, 5, 'up'),
+        (6, 1, 'down'), (6, 3, 'down'), (6, 5, 'down'),
+        (2, 0, 'left'), (4, 0, 'left'),
+        (2, 6, 'right'), (4, 6, 'right'),
+        (3, 2, 'left'), (3, 4, 'right'),
+        (5, 2, 'left'), (5, 4, 'right'),
+        (4, 3, 'up'),
     ],
-    # 第 2 关：每个箭头方向上有一个“更远的箭头”，但先清空近处的即可解
+    # 第 2 关
     [
-        (0, 0, 'right'), (0, 4, 'up'), (0, 9, 'down'),
-        (3, 3, 'left'), (3, 6, 'right'),
-        (6, 1, 'up'), (6, 8, 'down'),
-        (9, 0, 'right'), (9, 5, 'left'), (9, 9, 'up'),
+        (0, 1, 'up'), (0, 3, 'up'), (0, 5, 'up'),
+        (6, 1, 'down'), (6, 3, 'down'), (6, 5, 'down'),
+        (1, 0, 'left'), (3, 0, 'left'), (5, 0, 'left'),
+        (1, 6, 'right'), (3, 6, 'right'), (5, 6, 'right'),
+        (2, 2, 'left'), (2, 4, 'right'),
+        (4, 2, 'left'), (4, 4, 'right'),
+        (3, 3, 'up'),
     ],
-    # 第 3 关：多行多列交错，但保证由外向内可解
+    # 第 3 关
     [
-        (0, 0, 'up'), (0, 3, 'up'), (0, 6, 'up'), (0, 9, 'up'),
-        (2, 2, 'left'), (2, 7, 'right'),
-        (4, 0, 'left'), (4, 5, 'up'), (4, 9, 'right'),
-        (6, 2, 'left'), (6, 7, 'right'),
-        (9, 0, 'down'), (9, 3, 'down'), (9, 6, 'down'), (9, 9, 'down'),
+        (0, 0, 'up'), (0, 2, 'up'), (0, 4, 'up'), (0, 6, 'up'),
+        (6, 0, 'down'), (6, 2, 'down'), (6, 4, 'down'), (6, 6, 'down'),
+        (1, 0, 'left'), (3, 0, 'left'), (5, 0, 'left'),
+        (1, 6, 'right'), (3, 6, 'right'), (5, 6, 'right'),
+        (1, 3, 'up'), (3, 3, 'up'), (5, 3, 'up'),
+        (3, 1, 'left'), (3, 5, 'right'),
+        (2, 2, 'left'), (2, 4, 'right'),
+        (4, 2, 'left'), (4, 4, 'right'),
     ],
 ]
 
@@ -110,22 +130,86 @@ def draw_rounded_rect(surface, color, rect, radius=10, border=0, border_color=No
         pygame.draw.rect(surface, border_color, rect, border, border_radius=radius)
 
 
-def draw_cartoon_arrow(surface, cx, cy, direction, color, scale=1.0):
-    s = int(22 * scale)
+def rounded_polygon(surface, color, points, radius):
+    n = len(points)
+    if n < 3 or radius <= 0:
+        pygame.draw.polygon(surface, color, points)
+        return
+    new_points = []
+    for i in range(n):
+        p_prev = points[(i - 1) % n]
+        p_curr = points[i]
+        p_next = points[(i + 1) % n]
+        v1x = p_prev[0] - p_curr[0]
+        v1y = p_prev[1] - p_curr[1]
+        v2x = p_next[0] - p_curr[0]
+        v2y = p_next[1] - p_curr[1]
+        len1 = math.hypot(v1x, v1y) or 1
+        len2 = math.hypot(v2x, v2y) or 1
+        u1x, u1y = v1x / len1, v1y / len1
+        u2x, u2y = v2x / len2, v2y / len2
+        r = min(radius, len1 / 2, len2 / 2)
+        a = (p_curr[0] + u1x * r, p_curr[1] + u1y * r)
+        b = (p_curr[0] + u2x * r, p_curr[1] + u2y * r)
+        steps = 6
+        for t in range(steps + 1):
+            tt = t / steps
+            x = (1 - tt) ** 2 * a[0] + 2 * (1 - tt) * tt * p_curr[0] + tt ** 2 * b[0]
+            y = (1 - tt) ** 2 * a[1] + 2 * (1 - tt) * tt * p_curr[1] + tt ** 2 * b[1]
+            new_points.append((x, y))
+    pygame.draw.polygon(surface, color, new_points)
+
+
+def draw_cartoon_arrow(surface, cx, cy, direction, color, scale=1.0, wobble=0.0):
+    s = 24 * scale
     if s < 4:
         return
     angle = {'right': 0, 'up': -90, 'left': 180, 'down': 90}[direction]
-    base_points = [(-s, -s), (s, 0), (-s, s)]
     rad = math.radians(angle)
     cos_a, sin_a = math.cos(rad), math.sin(rad)
-    rotated = [(x * cos_a - y * sin_a + cx, x * sin_a + y * cos_a + cy) for (x, y) in base_points]
-    shadow = [(x + 3, y + 4) for (x, y) in rotated]
-    pygame.draw.polygon(surface, ARROW_SHADOW, shadow)
-    pygame.draw.polygon(surface, color, rotated)
-    pygame.draw.polygon(surface, ARROW_OUTLINE, rotated, 2)
-    hx = cx - int(cos_a * s * 0.4)
-    hy = cy - int(sin_a * s * 0.4)
-    pygame.draw.circle(surface, (255, 255, 255), (hx, hy), max(2, int(s * 0.18)))
+
+    def rot(px, py):
+        return (px * cos_a - py * sin_a + cx + wobble, px * sin_a + py * cos_a + cy)
+
+    outline = [
+        rot(-s, -s * 0.3),
+        rot(-s * 0.1, -s * 0.3),
+        rot(-s * 0.1, -s * 0.65),
+        rot(s, 0),
+        rot(-s * 0.1, s * 0.65),
+        rot(-s * 0.1, s * 0.3),
+        rot(-s, s * 0.3),
+    ]
+    shadow = [(x + 3, y + 4) for (x, y) in outline]
+    rounded_polygon(surface, ARROW_SHADOW, shadow, s * 0.35)
+    rounded_polygon(surface, color, outline, s * 0.35)
+    pygame.draw.polygon(surface, ARROW_OUTLINE, outline, 2)
+    hx, hy = rot(-s * 0.4, -s * 0.12)
+    pygame.draw.circle(surface, (255, 255, 255), (int(hx), int(hy)), max(2, int(s * 0.1)))
+
+
+def draw_arrow_button(surface, rect, text, mouse, color=None, hover_color=None):
+    if color is None:
+        color = BTN_NORMAL
+    if hover_color is None:
+        hover_color = BTN_HOVER
+    c = hover_color if rect.collidepoint(mouse) else color
+    draw_rounded_rect(surface, c, rect, radius=rect.height // 2)
+    t = font_md.render(text, True, BTN_TEXT)
+    surface.blit(t, (rect.x + (rect.w - t.get_width()) // 2,
+                     rect.y + (rect.h - t.get_height()) // 2))
+
+
+def draw_close_button(surface):
+    close_rect = pygame.Rect(WIDTH - 58, 18, 44, 44)
+    mouse = pygame.mouse.get_pos()
+    color = CLOSE_HOVER if close_rect.collidepoint(mouse) else CLOSE_BG
+    draw_rounded_rect(surface, color, close_rect, radius=14)
+    cx0, cy0 = close_rect.center
+    d = 10
+    pygame.draw.line(surface, BTN_TEXT, (cx0 - d, cy0 - d), (cx0 + d, cy0 + d), 3)
+    pygame.draw.line(surface, BTN_TEXT, (cx0 - d, cy0 + d), (cx0 + d, cy0 - d), 3)
+    return close_rect
 
 
 # ==================== 游戏逻辑 ====================
@@ -144,37 +228,124 @@ def check_can_fly(arrows, row, col, direction):
     return True
 
 
-# ==================== 界面绘制 ====================
-def draw_start_screen():
+def find_blocker(arrows, row, col, direction):
+    best = None
+    for (r, c, d) in arrows:
+        if r == row and c == col:
+            continue
+        if direction == 'right' and r == row and c > col:
+            if best is None or c < best[1]:
+                best = (r, c)
+        elif direction == 'left' and r == row and c < col:
+            if best is None or c > best[1]:
+                best = (r, c)
+        elif direction == 'down' and c == col and r > row:
+            if best is None or r < best[0]:
+                best = (r, c)
+        elif direction == 'up' and c == col and r < row:
+            if best is None or r > best[0]:
+                best = (r, c)
+    return best
+
+
+# ==================== 退出确认弹窗 ====================
+def draw_quit_dialog():
+    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    overlay.fill(OVERLAY)
+    screen.blit(overlay, (0, 0))
+    dw, dh = 420, 220
+    dx = WIDTH // 2 - dw // 2
+    dy = HEIGHT // 2 - dh // 2
+    dialog = pygame.Rect(dx, dy, dw, dh)
+    draw_rounded_rect(screen, DIALOG_BG, dialog, radius=20, border=2, border_color=DIALOG_BORDER)
+    title = font_lg.render("确定退出游戏吗？", True, TEXT_DARK)
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, dy + 40))
+    sub = font_sm.render("退出后进度将不会保存", True, TEXT_MID)
+    screen.blit(sub, (WIDTH // 2 - sub.get_width() // 2, dy + 90))
+    mouse = pygame.mouse.get_pos()
+    yes_rect = pygame.Rect(WIDTH // 2 - 150, dy + 140, 120, 48)
+    yes_color = CLOSE_HOVER if yes_rect.collidepoint(mouse) else CLOSE_BG
+    draw_rounded_rect(screen, yes_color, yes_rect, radius=24)
+    yt = font_md.render("退出", True, BTN_TEXT)
+    screen.blit(yt, (yes_rect.x + (yes_rect.w - yt.get_width()) // 2,
+                     yes_rect.y + (yes_rect.h - yt.get_height()) // 2))
+    no_rect = pygame.Rect(WIDTH // 2 + 30, dy + 140, 120, 48)
+    no_color = BTN_HOVER if no_rect.collidepoint(mouse) else BTN_NORMAL
+    draw_rounded_rect(screen, no_color, no_rect, radius=24)
+    nt = font_md.render("取消", True, BTN_TEXT)
+    screen.blit(nt, (no_rect.x + (no_rect.w - nt.get_width()) // 2,
+                     no_rect.y + (no_rect.h - nt.get_height()) // 2))
+    pygame.display.flip()
+    return yes_rect, no_rect
+
+
+# ==================== 主页面 ====================
+def draw_main_screen(music_on, volume):
     draw_vertical_gradient(screen, BG_TOP, BG_BOTTOM)
     title = font_xl.render("一箭又一箭", True, TEXT_DARK)
-    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 2 - 140))
-    sub = font_md.render("点击箭头，让它飞出去", True, TEXT_MID)
-    screen.blit(sub, (WIDTH // 2 - sub.get_width() // 2, HEIGHT // 2 - 60))
-    btn = pygame.Rect(WIDTH // 2 - 110, HEIGHT // 2 + 20, 220, 60)
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 80))
+    sub = font_sm.render("点击箭头，让它飞出去", True, TEXT_MID)
+    screen.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 145))
+
     mouse = pygame.mouse.get_pos()
-    color = BTN_HOVER if btn.collidepoint(mouse) else BTN_NORMAL
-    draw_rounded_rect(screen, color, btn, radius=16)
-    t = font_md.render("开始游戏", True, BTN_TEXT)
-    screen.blit(t, (btn.x + (btn.w - t.get_width()) // 2,
-                    btn.y + (btn.h - t.get_height()) // 2))
+
+    panel = pygame.Rect(WIDTH // 2 - 220, 200, 440, 320)
+    draw_rounded_rect(screen, PANEL_BG, panel, radius=24, border=2, border_color=PANEL_BORDER)
+
+    ptitle = font_md.render("设 置", True, TEXT_DARK)
+    screen.blit(ptitle, (WIDTH // 2 - ptitle.get_width() // 2, panel.y + 20))
+
+    music_label = font_sm.render("音乐", True, TEXT_DARK)
+    screen.blit(music_label, (panel.x + 40, panel.y + 80))
+    music_btn = pygame.Rect(panel.right - 160, panel.y + 72, 120, 40)
+    mc = BTN_HOVER if music_btn.collidepoint(mouse) else BTN_NORMAL
+    draw_rounded_rect(screen, mc, music_btn, radius=20)
+    mt = font_sm.render("开" if music_on else "关", True, BTN_TEXT)
+    screen.blit(mt, (music_btn.x + (music_btn.w - mt.get_width()) // 2,
+                     music_btn.y + (music_btn.h - mt.get_height()) // 2))
+
+    vol_label = font_sm.render("音量", True, TEXT_DARK)
+    screen.blit(vol_label, (panel.x + 40, panel.y + 140))
+    vol_minus = pygame.Rect(panel.right - 220, panel.y + 132, 44, 40)
+    vol_plus = pygame.Rect(panel.right - 60, panel.y + 132, 44, 40)
+    for r, txt in [(vol_minus, "-"), (vol_plus, "+")]:
+        c = BTN_HOVER if r.collidepoint(mouse) else BTN_NORMAL
+        draw_rounded_rect(screen, c, r, radius=20)
+        t = font_md.render(txt, True, BTN_TEXT)
+        screen.blit(t, (r.x + (r.w - t.get_width()) // 2,
+                        r.y + (r.h - t.get_height()) // 2))
+    bar_rect = pygame.Rect(panel.right - 170, panel.y + 142, 100, 20)
+    draw_rounded_rect(screen, (230, 224, 214), bar_rect, radius=10)
+    fill_w = int(bar_rect.w * volume / 100)
+    if fill_w > 0:
+        fill_rect = pygame.Rect(bar_rect.x, bar_rect.y, fill_w, bar_rect.h)
+        draw_rounded_rect(screen, BTN_NORMAL, fill_rect, radius=10)
+    vol_text = font_xs.render(f"{volume}%", True, TEXT_DARK)
+    screen.blit(vol_text, (bar_rect.x + bar_rect.w + 8,
+                           bar_rect.y + (bar_rect.h - vol_text.get_height()) // 2))
+
+    start_btn = pygame.Rect(WIDTH // 2 - 130, panel.y + 220, 260, 56)
+    draw_arrow_button(screen, start_btn, "开 始 游 戏", mouse)
+
+    close_rect = draw_close_button(screen)
     pygame.display.flip()
-    return btn
+    return start_btn, music_btn, vol_minus, vol_plus, close_rect
 
 
-def draw_level_select(current_level):
+# ==================== 关卡选择 ====================
+def draw_level_select(level):
     draw_vertical_gradient(screen, BG_TOP, BG_BOTTOM)
     title = font_lg.render("选择关卡", True, TEXT_DARK)
-    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 80))
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 40))
 
+    mouse = pygame.mouse.get_pos()
     buttons = []
     cols = 3
-    btn_w, btn_h = 140, 90
-    gap = 30
+    btn_w, btn_h = 130, 100
+    gap = 26
     total_w = cols * btn_w + (cols - 1) * gap
     start_x = WIDTH // 2 - total_w // 2
-    start_y = 200
-    mouse = pygame.mouse.get_pos()
+    start_y = 130
 
     for i in range(len(LEVELS)):
         row = i // cols
@@ -183,122 +354,139 @@ def draw_level_select(current_level):
         y = start_y + row * (btn_h + gap)
         rect = pygame.Rect(x, y, btn_w, btn_h)
         hovered = rect.collidepoint(mouse)
-        color = BTN_HOVER if hovered else BTN_NORMAL
-        draw_rounded_rect(screen, color, rect, radius=14)
-        label = font_lg.render(f"{i + 1}", True, BTN_TEXT)
+        c = BTN_HOVER if hovered else BTN_NORMAL
+        draw_rounded_rect(screen, c, rect, radius=20)
+        label = font_xl.render(f"{i + 1}", True, BTN_TEXT)
         screen.blit(label, (rect.x + (rect.w - label.get_width()) // 2,
-                            rect.y + (rect.h - label.get_height()) // 2 - 6))
-        sub = font_sm.render("关卡", True, BTN_TEXT)
+                            rect.y + (rect.h - label.get_height()) // 2 - 8))
+        sub = font_xs.render("关卡", True, BTN_TEXT)
         screen.blit(sub, (rect.x + (rect.w - sub.get_width()) // 2,
-                          rect.y + rect.h - 28))
+                          rect.y + rect.h - 26))
         buttons.append((rect, i))
 
-    back_btn = pygame.Rect(30, 30, 100, 40)
-    back_color = BTN_HOVER if back_btn.collidepoint(mouse) else BTN_NORMAL
-    draw_rounded_rect(screen, back_color, back_btn, radius=10)
-    bt = font_sm.render("返回", True, BTN_TEXT)
-    screen.blit(bt, (back_btn.x + (back_btn.w - bt.get_width()) // 2,
-                     back_btn.y + (back_btn.h - bt.get_height()) // 2))
+    back_btn = pygame.Rect(30, 40, 100, 44)
+    draw_arrow_button(screen, back_btn, "返回", mouse)
 
+    close_rect = draw_close_button(screen)
     pygame.display.flip()
-    return buttons, back_btn
+    return buttons, back_btn, close_rect
 
 
+# ==================== 游戏界面 ====================
 def draw_game(arrows, anim, level, mistakes, hover_pos, message, msg_alpha):
     draw_vertical_gradient(screen, BG_TOP, BG_BOTTOM)
 
-    # 标题居中
-    title = font_lg.render("一箭又一箭", True, TEXT_DARK)
-    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 22))
+    level_text = font_lg.render(f"关卡 {level + 1}", True, TEXT_DARK)
+    screen.blit(level_text, (WIDTH // 2 - level_text.get_width() // 2, 30))
 
-    # 信息栏
-    info = f"第 {level + 1} 关    剩余 {len(arrows) + (1 if anim else 0)}    失误 {mistakes} / {MAX_MISTAKES}"
-    info_surf = font_sm.render(info, True, TEXT_MID)
-    screen.blit(info_surf, (MARGIN_SIDE, 70))
+    mistakes_text = font_sm.render(
+        f"失误 {mistakes} / {MAX_MISTAKES}", True,
+        ARROW_HIT if mistakes >= MAX_MISTAKES - 1 else TEXT_MID)
+    screen.blit(mistakes_text, (WIDTH // 2 - mistakes_text.get_width() // 2, 72))
 
-    # 棋盘
     board_rect = pygame.Rect(MARGIN_SIDE, MARGIN_TOP, COLS * CELL, ROWS * CELL)
-    draw_rounded_rect(screen, BOARD_BG, board_rect, radius=12, border=2, border_color=BOARD_BORDER)
+    draw_rounded_rect(screen, BOARD_BG, board_rect, radius=16,
+                      border=2, border_color=BOARD_BORDER)
 
-    for r in range(ROWS + 1):
-        y = MARGIN_TOP + r * CELL
-        pygame.draw.line(screen, GRID_LINE, (MARGIN_SIDE, y), (MARGIN_SIDE + COLS * CELL, y), 1)
-    for c in range(COLS + 1):
-        x = MARGIN_SIDE + c * CELL
-        pygame.draw.line(screen, GRID_LINE, (x, MARGIN_TOP), (x, MARGIN_TOP + ROWS * CELL), 1)
+    for r in range(ROWS):
+        for c in range(COLS):
+            cell_rect = pygame.Rect(
+                MARGIN_SIDE + c * CELL + 4,
+                MARGIN_TOP + r * CELL + 4,
+                CELL - 8, CELL - 8)
+            draw_rounded_rect(screen, CELL_FILL, cell_rect, radius=10)
+            pygame.draw.rect(screen, CELL_LINE, cell_rect, 2, border_radius=10)
 
-    # 绘制所有静态箭头
+    anim_arrow = anim['arrow'] if anim else None
     for (r, c, d) in arrows:
+        if anim_arrow == (r, c, d):
+            continue
         cx = MARGIN_SIDE + c * CELL + CELL // 2
         cy = MARGIN_TOP + r * CELL + CELL // 2
-        color_idx = (r * 7 + c * 3) % len(ARROW_COLORS)
+        color_idx = (r * 3 + c * 5) % len(ARROW_COLORS)
         color = ARROW_COLORS[color_idx]
         if hover_pos == (r, c) and anim is None:
             color = ARROW_HIGHLIGHT
+            cell_rect = pygame.Rect(
+                MARGIN_SIDE + c * CELL + 4,
+                MARGIN_TOP + r * CELL + 4,
+                CELL - 8, CELL - 8)
+            pygame.draw.rect(screen, ARROW_HIGHLIGHT, cell_rect, 3, border_radius=10)
         draw_cartoon_arrow(screen, cx, cy, d, color, 1.0)
 
-    # 绘制动画中的箭头
     if anim:
         (r, c, d) = anim['arrow']
-        progress = anim['progress']
         cx = MARGIN_SIDE + c * CELL + CELL // 2
         cy = MARGIN_TOP + r * CELL + CELL // 2
-        offset = progress * CELL * 4
-        if d == 'right':
-            cx += offset
-        elif d == 'left':
-            cx -= offset
-        elif d == 'up':
-            cy -= offset
-        else:
-            cy += offset
-        alpha = max(0, 255 - int(progress * 300))
-        scale = max(0.1, 1.0 - progress * 0.6)
-        color_idx = (r * 7 + c * 3) % len(ARROW_COLORS)
-        color = ARROW_COLORS[color_idx]
-        tmp_size = int(CELL * 2.5)
-        tmp = pygame.Surface((tmp_size, tmp_size), pygame.SRCALPHA)
-        draw_cartoon_arrow(tmp, tmp_size // 2, tmp_size // 2, d, color, scale)
-        tmp.set_alpha(alpha)
-        screen.blit(tmp, (cx - tmp_size // 2, cy - tmp_size // 2))
+        color_idx = (r * 3 + c * 5) % len(ARROW_COLORS)
+        base_color = ARROW_COLORS[color_idx]
+
+        if anim['type'] == 'fly':
+            progress = anim['progress']
+            offset = progress * CELL * 5
+            if d == 'right':
+                cx += offset
+            elif d == 'left':
+                cx -= offset
+            elif d == 'up':
+                cy -= offset
+            else:
+                cy += offset
+            alpha = max(0, 255 - int(progress * 320))
+            scale = max(0.1, 1.0 - progress * 0.5)
+            tmp_size = int(CELL * 3)
+            tmp = pygame.Surface((tmp_size, tmp_size), pygame.SRCALPHA)
+            draw_cartoon_arrow(tmp, tmp_size // 2, tmp_size // 2, d, base_color, scale)
+            tmp.set_alpha(alpha)
+            screen.blit(tmp, (cx - tmp_size // 2, cy - tmp_size // 2))
+
+        elif anim['type'] == 'collide':
+            progress = anim['progress']
+            travel = anim.get('travel', CELL * 0.5)
+            if progress < 0.4:
+                t = progress / 0.4
+                offset = t * travel
+                color = base_color
+                wobble = 0.0
+            elif progress < 0.85:
+                t = (progress - 0.4) / 0.45
+                offset = travel
+                color = ARROW_HIT
+                wobble = math.sin(t * math.pi * 8) * 6 * (1 - t)
+            else:
+                t = (progress - 0.85) / 0.15
+                offset = travel * (1 - t)
+                color = ARROW_HIT
+                wobble = 0.0
+            if d == 'right':
+                cx += offset
+            elif d == 'left':
+                cx -= offset
+            elif d == 'up':
+                cy -= offset
+            else:
+                cy += offset
+            draw_cartoon_arrow(screen, cx, cy, d, color, 1.0, wobble=wobble)
 
     mouse = pygame.mouse.get_pos()
 
-    # 重新开始按钮
-    btn_rect = pygame.Rect(WIDTH - MARGIN_SIDE - 120, 22, 120, 42)
-    btn_color = BTN_HOVER if btn_rect.collidepoint(mouse) else BTN_NORMAL
-    draw_rounded_rect(screen, btn_color, btn_rect, radius=10)
-    btn_text = font_sm.render("重新开始", True, BTN_TEXT)
-    screen.blit(btn_text, (btn_rect.x + (btn_rect.w - btn_text.get_width()) // 2,
-                           btn_rect.y + (btn_rect.h - btn_text.get_height()) // 2))
+    btn_y = HEIGHT - 58
+    back_btn = pygame.Rect(MARGIN_SIDE, btn_y, 110, 44)
+    restart_btn = pygame.Rect(WIDTH // 2 - 70, btn_y, 140, 44)
+    draw_arrow_button(screen, back_btn, "返回", mouse, BTN_ALT, BTN_ALT_HOVER)
+    draw_arrow_button(screen, restart_btn, "重新开始", mouse)
 
-    # 返回按钮
-    back_rect = pygame.Rect(MARGIN_SIDE, 22, 90, 42)
-    back_color = BTN_HOVER if back_rect.collidepoint(mouse) else BTN_NORMAL
-    draw_rounded_rect(screen, back_color, back_rect, radius=10)
-    back_text = font_sm.render("返回", True, BTN_TEXT)
-    screen.blit(back_text, (back_rect.x + (back_rect.w - back_text.get_width()) // 2,
-                            back_rect.y + (back_rect.h - back_text.get_height()) // 2))
-
-    # 右上角 × 退出按钮
-    close_rect = pygame.Rect(WIDTH - 50, 22, 42, 42)
-    close_color = CLOSE_HOVER if close_rect.collidepoint(mouse) else CLOSE_BG
-    draw_rounded_rect(screen, close_color, close_rect, radius=10)
-    # 画一个 ×
-    cx0, cy0 = close_rect.center
-    d = 10
-    pygame.draw.line(screen, BTN_TEXT, (cx0 - d, cy0 - d), (cx0 + d, cy0 + d), 3)
-    pygame.draw.line(screen, BTN_TEXT, (cx0 - d, cy0 + d), (cx0 + d, cy0 - d), 3)
+    close_rect = draw_close_button(screen)
 
     if message and msg_alpha > 0:
         mt = font_md.render(message, True, ARROW_HIGHLIGHT)
         tmp = pygame.Surface((mt.get_width(), mt.get_height()), pygame.SRCALPHA)
         tmp.blit(mt, (0, 0))
         tmp.set_alpha(msg_alpha)
-        screen.blit(tmp, (WIDTH // 2 - mt.get_width() // 2, HEIGHT - 45))
+        screen.blit(tmp, (WIDTH // 2 - mt.get_width() // 2, MARGIN_TOP - 40))
 
     pygame.display.flip()
-    return btn_rect, back_rect, close_rect
+    return back_btn, restart_btn, close_rect
 
 
 def draw_overlay(text, sub_text=None):
@@ -316,7 +504,7 @@ def draw_overlay(text, sub_text=None):
 # ==================== 主流程 ====================
 def main():
     clock = pygame.time.Clock()
-    scene = 'start'
+    scene = 'main'
     level = 0
     arrows = []
     mistakes = 0
@@ -325,34 +513,71 @@ def main():
     message = ""
     msg_timer = 0
     wait_release = False
+    show_quit_dialog = False
+    music_on = True
+    volume = 60
 
     while True:
         mouse = pygame.mouse.get_pos()
 
-        # ---------- 开始界面 ----------
-        if scene == 'start':
-            btn = draw_start_screen()
+        # 退出确认弹窗
+        if show_quit_dialog:
+            yes_rect, no_rect = draw_quit_dialog()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN and not wait_release:
-                    if btn.collidepoint(event.pos):
+                    if yes_rect.collidepoint(event.pos):
+                        pygame.quit()
+                        sys.exit()
+                    if no_rect.collidepoint(event.pos):
+                        show_quit_dialog = False
+                        wait_release = True
+            if not pygame.mouse.get_pressed()[0]:
+                wait_release = False
+            clock.tick(60)
+            continue
+
+        # 主页面
+        if scene == 'main':
+            start_btn, music_btn, vol_minus, vol_plus, close_rect = draw_main_screen(music_on, volume)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN and not wait_release:
+                    if close_rect.collidepoint(event.pos):
+                        show_quit_dialog = True
+                        wait_release = True
+                    elif music_btn.collidepoint(event.pos):
+                        music_on = not music_on
+                        wait_release = True
+                    elif vol_minus.collidepoint(event.pos):
+                        volume = max(0, volume - 10)
+                        wait_release = True
+                    elif vol_plus.collidepoint(event.pos):
+                        volume = min(100, volume + 10)
+                        wait_release = True
+                    elif start_btn.collidepoint(event.pos):
                         scene = 'select'
                         wait_release = True
             if not pygame.mouse.get_pressed()[0]:
                 wait_release = False
 
-        # ---------- 关卡选择 ----------
+        # 关卡选择
         elif scene == 'select':
-            buttons, back_btn = draw_level_select(level)
+            buttons, back_btn, close_rect = draw_level_select(level)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN and not wait_release:
-                    if back_btn.collidepoint(event.pos):
-                        scene = 'start'
+                    if close_rect.collidepoint(event.pos):
+                        show_quit_dialog = True
+                        wait_release = True
+                    elif back_btn.collidepoint(event.pos):
+                        scene = 'main'
                         wait_release = True
                     else:
                         for rect, idx in buttons:
@@ -368,7 +593,7 @@ def main():
             if not pygame.mouse.get_pressed()[0]:
                 wait_release = False
 
-        # ---------- 游戏界面 ----------
+        # 游戏界面
         elif scene == 'playing':
             hover_pos = None
             if anim is None and MARGIN_TOP <= mouse[1] <= MARGIN_TOP + ROWS * CELL \
@@ -380,15 +605,19 @@ def main():
                         hover_pos = (r, c)
                         break
 
-            btn_rect, back_rect, close_rect = draw_game(
+            back_btn, restart_btn, close_rect = draw_game(
                 arrows, anim, level, mistakes, hover_pos, message,
                 min(255, msg_timer * 8))
 
-            # 动画推进
             if anim:
-                anim['progress'] += 0.07
-                if anim['progress'] >= 1.0:
-                    anim = None
+                if anim['type'] == 'fly':
+                    anim['progress'] += 0.07
+                    if anim['progress'] >= 1.0:
+                        anim = None
+                elif anim['type'] == 'collide':
+                    anim['progress'] += 0.04
+                    if anim['progress'] >= 1.0:
+                        anim = None
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -396,25 +625,21 @@ def main():
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN and not wait_release:
                     mx, my = event.pos
-                    # × 退出 → 回关卡选择
                     if close_rect.collidepoint(mx, my):
-                        scene = 'select'
+                        show_quit_dialog = True
                         wait_release = True
                         continue
-                    # 重新开始
-                    if btn_rect.collidepoint(mx, my):
+                    if restart_btn.collidepoint(mx, my):
                         arrows = list(LEVELS[level])
                         mistakes = 0
                         message = ""
                         anim = None
                         wait_release = True
                         continue
-                    # 返回
-                    if back_rect.collidepoint(mx, my):
+                    if back_btn.collidepoint(mx, my):
                         scene = 'select'
                         wait_release = True
                         continue
-                    # 点击棋盘
                     if anim is None and MARGIN_TOP <= my <= MARGIN_TOP + ROWS * CELL \
                        and MARGIN_SIDE <= mx <= MARGIN_SIDE + COLS * CELL:
                         col = (mx - MARGIN_SIDE) // CELL
@@ -428,13 +653,28 @@ def main():
                             r, c, d = clicked
                             if check_can_fly(arrows, r, c, d):
                                 arrows.remove(clicked)
-                                anim = {'arrow': clicked, 'progress': 0.0}
+                                anim = {'type': 'fly', 'arrow': clicked, 'progress': 0.0}
                                 message = "飞出！"
                                 msg_timer = 40
                             else:
-                                mistakes += 1
+                                blocker = find_blocker(arrows, r, c, d)
+                                travel = CELL * 0.85
+                                if blocker:
+                                    br, bc = blocker
+                                    if d == 'right':
+                                        travel = (bc - c) * CELL - CELL * 0.85
+                                    elif d == 'left':
+                                        travel = (c - bc) * CELL - CELL * 0.85
+                                    elif d == 'down':
+                                        travel = (br - r) * CELL - CELL * 0.85
+                                    elif d == 'up':
+                                        travel = (r - br) * CELL - CELL * 0.85
+                                    travel = max(CELL * 0.3, travel)
+                                anim = {'type': 'collide', 'arrow': clicked,
+                                        'progress': 0.0, 'travel': travel}
                                 message = "被挡住了！"
                                 msg_timer = 40
+                                mistakes += 1
                             wait_release = True
 
             if not pygame.mouse.get_pressed()[0]:
@@ -461,7 +701,7 @@ def main():
 
             # 失败
             if mistakes >= MAX_MISTAKES:
-                draw_overlay("失败！", "点击任意处重试")
+                draw_overlay("失败！", "点击任意处重新开始本关")
                 waiting = True
                 while waiting:
                     for event in pygame.event.get():
